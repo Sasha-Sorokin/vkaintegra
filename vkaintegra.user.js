@@ -9,6 +9,7 @@
 // @grant    none
 // @include https://vk.com/*
 // @run-at document-end
+// @noframes
 // @author
 // ==/UserScript==
 
