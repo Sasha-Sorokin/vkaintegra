@@ -13,7 +13,7 @@
 
 You have to install userscript with the preferred extension ([Tampermonkey](https://www.tampermonkey.net/), [Greasemonkey](https://www.greasespot.net/), [Violentmonkey](https://violentmonkey.github.io/)). Clicking on the following button with extension installed will open you an installation window.
 
-[![Installation button](https://img.shields.io/badge/VK%20Audio%20Integration-Install-brightgreen)](/vkaintegra.user.js)
+[![Installation button](https://img.shields.io/badge/VK%20Audio%20Integration-Install-brightgreen)](https://github.com/Sasha-Sorokin/vkaintegra/raw/master/vkaintegra.user.js)
 
 **You still need system-wide integration which will use provided data.** KDE provides Plasma Browser Integration extension for Firefox and Chrome, which uses data from MediaSession along with monitoring web page audio and video elements to provide you controls and display media info. [Read more →](https://mastodon.technology/@kde/101985925180129532)
 

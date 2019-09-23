@@ -13,7 +13,7 @@
 
 Вам нужно будет установить юзерскрипт через предпочтительное расширение для этого ([Tampermonkey](https://www.tampermonkey.net/), [Greasemonkey](https://www.greasespot.net/), [Violentmonkey](https://violentmonkey.github.io/)). По нажатию на следующую кнопку должен открыться диалог установки.
 
-[![Кнопка установки](https://img.shields.io/badge/VK%20Audio%20Integration-%D0%A3%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%B8%D1%82%D1%8C-brightgreen)](/vkaintegra.user.js)
+[![Кнопка установки](https://img.shields.io/badge/VK%20Audio%20Integration-%D0%A3%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%B8%D1%82%D1%8C-brightgreen)](https://github.com/Sasha-Sorokin/vkaintegra/raw/master/vkaintegra.user.js)
 
 **По-прежнему необходима системная интеграция, которая будет использовать эти данные**. KDE предоставляет расширение Plasma Browser Integration для Firefox и Chrome, которое использует MediaSession и мониторинг аудио и видео элементов на странице, чтобы предоставить вам элементы управления и отображать информацию о медиа. [Подробнее →](https://vk.com/@kde_ru-plasma-browser-integration-15)
 
