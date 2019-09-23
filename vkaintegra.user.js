@@ -186,10 +186,19 @@
 
     const handlerStates = Object.create(null);
 
+    // BUG-4: Chrome does not suppert "seek" and throws error
+    function setActionHandlerSafe(name, handler) {
+        try {
+            navigator.mediaSession.setActionHandler(name, handler);
+        } catch {
+            console.warn(`[VKAINTEGRA] Failed to setActionHandler "${name}", it may not supported in this browser`);
+        }
+    }
+
     function bindHandler(name, handler) {
         if (handlerStates[name]) return;
 
-        navigator.mediaSession.setActionHandler(name, handler);
+        setActionHandlerSafe(name, handler);
 
         handlerStates[name] = true;
     }
@@ -204,7 +213,7 @@
 
             if (!handlerStates[name]) continue;
 
-            navigator.mediaSession.setActionHandler(name, null);
+            setActionHandlerSafe(name, null);
 
             handlerStates[name] = undefined;
         }
