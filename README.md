@@ -1,5 +1,7 @@
 # VK.com integration with MediaSession
 
+[🇷🇺 По-русски →](/README.ru.md)
+
 > This userscript integrates VK.com Audio Player with new [MediaSession API](https://w3c.github.io/mediasession/). It is highly useful if you already use desktop integration extension for your desktop desktop environment (for example, [Plasma Browser Integration for KDE](https://community.kde.org/Plasma/Browser_Integration)).
 
 |         Without userscript          |         Using userscript         |
