@@ -135,8 +135,6 @@
 
         // Prepare the media session
 
-        console.log(trackMetadata);
-
         navigator.mediaSession.metadata = new MediaMetadata(trackMetadata);
 
         setPositionState({
