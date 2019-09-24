@@ -7,9 +7,11 @@
 |         Without userscript          |         Using userscript         |
 | :---------------------------------: | :------------------------------: |
 | ![Screenshot](examples/without.jpg) | ![Screenshot](examples/with.jpg) |
-| <ul><li>Cannot really control media, only seeking</li><li>No title or artist name neither</li></ul> | <ul><li>Dynamically changing controls</li><li>Cover<sup>**1**</sup>, artist, title and album/playlist name</li></ul> |
+| <ul><li>Cannot really control media, only seeking</li><li>No title or artist name neither</li></ul> | <ul><li>Dynamically changing controls</li><li>Cover<sup>**1**</sup>, artist, title and album/playlist name</li><li>Now playing notifications<sup>**2**</sup></li></ul> |
 
 <sup>1</sup> *Unfortunately, VK does not download data about album for tracks played not from albums, only small cover image is available, whereas you play tracks from albums, the the large cover is being loaded. There is no easy fix for this.*
+
+<sup>2</sup> *Notifications are only sent if you enabled them after first time installation. You can always disable them by either denying VK to send you notifications and reloading the page, or by going in [developer tools](https://developers.google.com/web/tools/chrome-devtools#open) console and typing `vkaDeny()` there (`vkaNotifs()` enables them, by the way). I will try find a way to make re-enabling easier later.*
 
 ## How do I use it?
 
