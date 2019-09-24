@@ -6,7 +6,12 @@
 // @supportURL https://github.com/Sasha-Sorokin/vkaintegra/issues
 // @version  1.2.0
 // @updateURL https://raw.githubusercontent.com/Sasha-Sorokin/vkaintegra/master/vkaintegra.user.js
-// @grant    none
+// @grant GM.notification
+// @grant GM_notification
+// @grant GM.setValue
+// @grant GM_setValue
+// @grant GM.getValue
+// @grant GM_getValue
 // @include https://vk.com/*
 // @run-at document-end
 // @noframes
@@ -58,6 +63,136 @@
         return audio[15];
     }
 
+    const RU_LANG_IDS = [0, 1, 100, 114, 777];
+
+    function isUsingRuLocale() {
+        return RU_LANG_IDS.includes(langConfig.id);
+    }
+
+    // =====================
+    // === NOTIFICATIONS ===
+    // =====================
+
+    const UNKNOWN_AUDIO_ICON = "https://i.imgur.com/tTGovqM.png";
+
+    let notificationsAllowed = false;
+
+    let currentNotification = undefined;
+
+    function showNotification(trackMetadata, actualityCallback) {
+        console.log("[VKAINTEGRA] Sending notification for", trackMetadata);
+
+        if (!notificationsAllowed) return;
+
+        let icon = trackMetadata.artwork[0].src;
+
+        if (!icon) icon = UNKNOWN_AUDIO_ICON;
+
+        if (currentNotification) currentNotification.close();
+
+        const notification = new Notification(trackMetadata.title, {
+            body: `${trackMetadata.artist}\n${trackMetadata.album} · VK`,
+            silent: true,
+            icon,
+            tag: "vk-nowplaying"
+        });
+
+        if (!actualityCallback()) {
+            notification.close();
+        } else {
+            currentNotification = notification;
+
+            setTimeout(notification.close.bind(notification), 3000);
+        }
+    }
+
+    // BUG-5: GM can be different and we must be catchy
+    const setValue = (() => {
+        try {
+            return GM && GM.setValue;
+        } catch {
+            return GM_setValue;
+        }
+    })();
+
+    unsafeWindow.vkaDeny = function disableNotifications() {
+        const BALLOON_TEXT = isUsingRuLocale()
+            ? "Что ж, как пожелаете!"
+            : "Well, as you wish!";
+
+        setValue("notifyActivated", false);
+        setValue("notifyDlgDone", true);
+
+        showDoneBox(BALLOON_TEXT);
+    };
+
+    function activateNotifications() {
+        notificationsAllowed = true;
+
+        setValue("notifyDlgDone", true);
+        setValue("notifyActivated", true);
+
+        return showDoneBox(
+            isUsingRuLocale()
+                ? "Уведомления включены!"
+                : "Notifications are enabled!"
+        );
+    }
+
+    unsafeWindow.vkaNotifs = function enableNotifications() {
+        if (Notification.permission === "granted") return activateNotifications();
+
+        Notification.requestPermission().then((status) => {
+            if (status === "granted") return activateNotifications();
+
+            showDoneBox(
+                isUsingRuLocale()
+                    ? "Кажется, вы отклонили запрос, либо отключили их в браузере.\n<a href=\"#\" onclick=\"vkaNotifs(); return false;\">Попробовать ещё раз?</a>"
+                    : "It seems you have denied request, or disabled it in browser.\n<a href=\"#\" onclick=\"vkaNotifs(); return false;\">Try again?</a>"
+            );
+        })
+    }
+
+    {
+        const getValue = (() => {
+            try {
+                return GM && GM.getValue;
+            } catch {
+                return GM_getValue;
+            }
+        })();
+
+
+        // BUG-6: getValue may be async and not, glad await ignores that
+        (async () => {
+            // Notification.permission === "granted"
+            if (await getValue("notifyActivated", true)) {
+                if (Notification.permission === "granted") {
+                    notificationsAllowed = true;
+                    return;
+                }
+
+                setValue("notifyActivated", false);
+
+                showDoneBox(
+                    isUsingRuLocale()
+                        ? "С момента прошлой активации уведомлений от VK Audio Integration разрешения на отправку этих самых уведомлений больше нет. Уведомления отключены. <a href=\"#\" onclick=\"vkaNotifs(); return false;\">Включить обратно?</a>"
+                        : "Since last activation of notifications from VK Audio Integration, there is no more permission to send those notifications, therefore notifications disabled. <a href=\"#\" onclick=\"vkaNotifs(); return false;\">Turn them back on!</a>"
+                );
+            }
+
+            if (await getValue("notifyDlgDone", false)) return;
+
+            showDoneBox(
+                isUsingRuLocale()
+                    ? "VK Audio Integration может также отправлять уведомления о текущем проигрываемом треке, но их нужно включить.\n<a href=\"#\" onclick=\"vkaNotifs(); return false;\">Давайте!</a>"
+                    : "VK Audio Integration can also send you notifications about currently playing track, but you should enable them.\n<a href=\"#\" onclick=\"vkaNotifs(); return false;\">Let's do it!</a>"
+            );
+
+            setValue("notifyDlgDone", true);
+        })();
+    }
+
     const setPositionState = navigator.mediaSession.setPositionState
         ? navigator.mediaSession.setPositionState
         : (() => {
@@ -70,7 +205,13 @@
     // === PLAYER EVENTS ===
     // =====================
 
-    onPlayerEvent("start", () => bindGeneralHandlers());
+    let isStarted = false;
+
+    onPlayerEvent("start", () => {
+        isStarted = true;
+
+        bindGeneralHandlers()
+    });
 
     function previousTrack(player) {
         // FEAT-1: Rewind to start instead of playing previous
@@ -153,6 +294,10 @@
         navigator.mediaSession.playbackState = "playing";
 
         updateControls(player, playlist, track);
+
+        if (isStarted) showNotification(trackMetadata, () => {
+            return player._currentAudio[0] === track[0];
+        });
     });
 
     onPlayerEvent("progress", function onProgress(_progress, duration, position) {
@@ -179,6 +324,8 @@
         navigator.mediaSession.metadata = undefined;
 
         resetHandlers(GENERAL_HANDLERS);
+
+        isStarted = false;
     });
 
     // ===================
