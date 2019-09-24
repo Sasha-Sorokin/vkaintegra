@@ -73,6 +73,15 @@
 
     onPlayerEvent("start", () => bindGeneralHandlers());
 
+    function previousTrack(player) {
+        // FEAT-1: Rewind to start instead of playing previous
+        if (player.stats.currentPosition > 2) {
+            player.seekToTime(0);
+        } else {
+            player.playPrev();
+        }
+    }
+
     function updateControls(player, playlist, track) {
         const audioPosition = playlist.indexOfAudio(track);
 
@@ -85,7 +94,7 @@
         else bindHandler("nexttrack", () => player.playNext());
 
         if (noPrevious) resetHandlers("previoustrack");
-        else bindHandler("previoustrack", () => player.playPrev());
+        else bindHandler("previoustrack", () => previousTrack(player));
     }
 
     function onPlaylistChange() {
