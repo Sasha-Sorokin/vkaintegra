@@ -17,7 +17,7 @@
 // @noframes
 // ==/UserScript==
 
-(() => {
+(async () => {
     "use strict";
 
     console.log("[VKAINTEGRA] Initialized...");
@@ -75,26 +75,478 @@
         return RU_LANG_IDS.includes(langConfig.id);
     }
 
+    function insertBefore(referenceNode, newNode) {
+        referenceNode.parentNode.insertBefore(newNode, referenceNode);
+    }
+
+    // ====================
+    // ===   SETTINGS   ===
+    // ====================
+
+    // BUG-5: GM can be different and we must be catchy
+    const settings = {
+        setValue: (() => {
+            try {
+                return GM && GM.setValue;
+            } catch {
+                return GM_setValue;
+            }
+        })(),
+        getValue: (() => {
+            try {
+                return GM && GM.getValue;
+            } catch {
+                return GM_getValue;
+            }
+        })()
+    };
+
+    /**
+     * Are notifications enabled
+     */
+    let notificationsEnabled;
+
+    /**
+     * Are notifications disposed by script
+     * @default null Notifications are not disposed
+     */
+    let notificationsDispose;
+
+    /**
+     * Does single press on Previous key seeks to beginning?
+     */
+    let previousSeeking;
+
+    // Load all the settings
+    await (async () => {
+        notificationsEnabled = await settings.getValue("notificationsEnabled", false);
+        notificationsDispose = await settings.getValue("notificationsDispose", "3s");
+        previousSeeking = await settings.getValue("previousSeeking", false);
+    })();
+
+    function saveSettings() {
+        settings.setValue("notificationsEnabled", notificationsEnabled);
+        settings.setValue("notificationsDispose", notificationsDispose);
+        settings.setValue("previousSeeking", previousSeeking);
+    }
+
+    // =========================
+    // === SETTINGS CONTROLS ===
+    // =========================
+
+    {
+        // #region Elements functions
+
+        function appendTo(elem, children) {
+            for (let i = 0, l = children.length; i < l; i++) {
+                const child = children[i];
+    
+                if (typeof child === "function") child(elem);
+                else elem.appendChild(child);
+            }
+        }
+    
+        function inlineMenuValueText(values, value) {
+            for (let i = 0, l = values.length; i < l; i++) {
+                const item = values[i];
+                if (item[0] === value) return item[1];
+            }
+        }
+    
+        function createInlineMenu(id, currentValue, values, onSelect) {
+            /* <div class="settings_vkaintegra_delay" id="settings_vkaintegra_delay">
+                <div class="idd_selected_value" tabindex="0" role="link">{{currentValueText}}</div>
+                
+                <input type="hidden" id="settings_vkaintegra_delay_input" name="settings_vkaintegra_delay" value="{{currentValueId}}">
+            </div> */
+    
+            const div = document.createElement("div");
+    
+            div.id = id;
+            div.classList.add(id);
+    
+            const selectedValue = document.createElement("div");
+    
+            selectedValue.classList.add("idd_selected_value");
+            selectedValue.setAttribute("tabIndex", 0);
+            selectedValue.setAttribute("role", "link");
+            selectedValue.innerText = inlineMenuValueText(values, currentValue);
+    
+            div.appendChild(selectedValue);
+    
+            const input = document.createElement("input");
+    
+            input.id = `${id}_input`;
+            input.setAttribute("type", "hidden");
+            input.setAttribute("name", id);
+            input.value = currentValue;
+    
+            div.appendChild(input);
+    
+            return function mount(parent) {
+                parent.appendChild(div);
+    
+                const dropdown = new InlineDropdown(div, {
+                    items: values,
+                    selected: currentValue,
+                    onSelect
+                });
+    
+                mount.component = dropdown;
+            }
+        }
+    
+        function createCheckbox(id, text, isChecked, onChange) {
+            const checkbox = document.createElement("input");
+    
+            checkbox.classList.add("blind_label");
+            checkbox.setAttribute("type", "checkbox");
+            checkbox.checked = isChecked;
+            checkbox.id = id;
+            checkbox.addEventListener("change", onChange);
+    
+            const label = document.createElement("label");
+    
+            label.setAttribute("for", id);
+            label.innerText = text;
+    
+            return [checkbox, label];
+        }
+    
+        function createSettingsNarrowRow(children) {
+            const div = document.createElement("div");
+    
+            div.classList.add("settings_narrow_row");
+    
+            appendTo(div, children);
+    
+            return div;
+        }
+    
+        function createSettingsLine(labelText, id, children) {
+            const div = document.createElement("div");
+
+            div.id = id;
+            div.classList.add("settings_line");
+    
+            const label = document.createElement("div");
+    
+            label.classList.add("settings_label");
+            label.innerText = labelText;
+    
+            div.appendChild(label);
+    
+            const inner = document.createElement("div");
+    
+            inner.classList.add("settings_labeled_text");
+            
+            appendTo(inner, children);
+    
+            div.appendChild(inner);
+    
+            return div;
+        }
+
+        function createHint(text) {
+            const hint = document.createElement("span");
+
+            hint.classList.add("hint_icon");
+
+            hint.addEventListener("mouseover", function showHint() {
+                showTooltip(this, {
+                    text,
+                    dir: "auto",
+                    shift: [22, 10],
+                    slide: 15,
+                    className: "settings_tt"
+                })
+            });
+
+            return hint;
+        }
+
+        function cid(id) {
+            return `vkaintegra_${id}`;
+        }
+    
+        const initNotifyValues = [
+            // [value, [russian, english]]
+            ["auto", ["автоматически", "automatically"]],
+            ["3s", ["спустя 3 секунды", "3 seconds after"]],
+            ["5s", ["спустя 5 секунд", "5 seconds after"]],
+        ];
+
+        function getNotifyDisposeValues() {
+            const values = [];
+            const isRuLocale = isUsingRuLocale();
+    
+            for (let i = 0, l = initNotifyValues.length; i < l; i++) {
+                const item = initNotifyValues[i];
+    
+                values.push([item[0], item[1][isRuLocale ? 0 : 1]]);
+            }
+    
+            return values;
+        }
+
+        function disableElement(element) {
+            element.style.opacity = "0.5";
+            element.style["pointer-events"] = "none";
+        }
+
+        function enableElement(element) {
+            element.style.opacity = "";
+            element.style["pointer-events"] = "";
+        }
+
+        // #endregion
+
+        // ================
+        // ===  EVENTS  ===
+        // ================
+
+        async function saveSettingsInteractive() {
+            saveSettings();
+
+            window.uiPageBlock && uiPageBlock.showSaved("vkaintegra");
+        }
+
+        function previousSeekingChanged(e) {
+            previousSeeking = e.target.checked;
+
+            saveSettingsInteractive();
+        }
+
+        let notificationsChangeLock = false;
+
+        async function notificationsChanged(e) {
+            if (notificationsChangeLock) return true;
+
+            let shouldSave = true;
+
+            if (e.target.checked) {
+                if (Notification.permission !== "granted") {
+                    // locking element
+                    e.target.disabled = true;
+                    disableElement(e.target.parentElement);
+                    notificationsChangeLock = true;
+
+                    const status = await Notification.requestPermission();
+
+                    if (status !== "granted") {
+                        showDoneBox(
+                            isUsingRuLocale()
+                                ? "Кажется вы отклонили запрос, либо они блокируются браузером."
+                                : "It seems you have denied request, or they're disabled in the browser."
+                        );
+
+                        e.target.checked = false;
+
+                        shouldSave = false;
+                    }
+
+                    e.target.disabled = false;
+                    enableElement(e.target.parentElement);
+                    notificationsChangeLock = false;
+                }
+
+                notificationsEnabled = Notification.permission === "granted";
+            } else {
+                notificationsEnabled = false;
+            }
+
+            if (notificationsEnabled) {
+                enableElement(settingsPanel.notifyDisposeSelect.component.getElement().parentNode);
+            } else {
+                disableElement(settingsPanel.notifyDisposeSelect.component.getElement().parentNode);
+            }
+
+            if (shouldSave) saveSettingsInteractive();
+        }
+
+        function notifyDisposeSelected(val) {
+            notificationsDispose = val;
+
+            saveSettingsInteractive();
+        }
+
+        // =============================
+        // === SETTINGS PANEL ITSELF ===
+        // =============================
+
+        let settingsPanel = Object.create(null);
+    
+        async function getSettingsLine() {
+            // #region Panel initialization
+
+            const ruLocale = isUsingRuLocale();
+    
+            if (!settingsPanel.previousSeekingCheckbox) {
+                const [,label] = settingsPanel.previousSeekingCheckbox = createCheckbox(
+                    cid("previous_seeking"),
+                    ruLocale
+                        ? "«Прошлый трек» перематывает в начало"
+                        : "“Previous track” seeking to beginning",
+                    previousSeeking,
+                    previousSeekingChanged
+                );
+
+                const tooltipText = ruLocale
+                    ? "Если настройка включена, то, при нажатии кнопки или клавиши «Прошлый трек», вместо перехода будет осуществляться перемотка к началу трека.<br><br>Переход всегда будет осуществляться, если трек играет менее 2 секунд."
+                    : "With this setting on, clicking button or pressing “Previous track” will seek to beginning of the current track instead of switching.<br><br>Switching will always happend if track is playing for less than 2 seconds.";
+
+                label.addEventListener("mouseover", function showLabelTooltip() {
+                    showTooltip(this, {
+                        shift: [-20, 8, 8],
+                        dir: "auto",
+                        text: tooltipText,
+                        slide: 15,
+                        className: 'settings_tt',
+                        hasover: 1
+                    });
+                });
+            }
+    
+            if (!settingsPanel.notificationsCheckbox) {
+                settingsPanel.notificationsCheckbox = createCheckbox(
+                    cid("notifications"),
+                    ruLocale ? "Включить уведомления" : "Enable notifications",
+                    notificationsEnabled,
+                    notificationsChanged
+                );
+            }
+    
+            if (!settingsPanel.notifyDisposeSelect) {
+                settingsPanel.notifyDisposeSelect = createInlineMenu(
+                    cid("notifications_dispose"),
+                    notificationsDispose,
+                    getNotifyDisposeValues(),
+                    notifyDisposeSelected
+                );
+            }
+    
+            if (!settingsPanel.panel) {
+                const CLOSE_NOTIFS_TEXT = document.createTextNode(
+                    ruLocale
+                        ? "Убирать уведомления "
+                        : "Close notifications "
+                );
+
+                const DISPOSE_HINT = createHint(
+                    ruLocale
+                        ? "Эта настройка позволяет установить, как быстро скрипт должен убирать уведомления.<br><br>В <b>автоматическом</b> режиме уведомления убираются браузером или системой.<br><br>В <b>других</b> режимах уведомления будут убраны спустя выбранный интервал времени."
+                        : "This setting allows to set how fast script must close notifications.<br><br>In <b>automatic</b> mode notifications will be closed by browser or system.<br><br>In <b>other</b> modes notifications will be closed after selected interval."
+                );
+
+                settingsPanel.panel = createSettingsLine("VK Audio Integration", "vkaintegra", [
+                    createSettingsNarrowRow(settingsPanel.previousSeekingCheckbox),
+                    createSettingsNarrowRow(settingsPanel.notificationsCheckbox),
+                    createSettingsNarrowRow([CLOSE_NOTIFS_TEXT, settingsPanel.notifyDisposeSelect, DISPOSE_HINT])
+                ]);
+
+                if (!notificationsEnabled) {
+                    disableElement(settingsPanel.notifyDisposeSelect.component.getElement().parentNode);
+                }
+            }
+
+            // #endregion
+
+            settingsPanel.previousSeekingCheckbox[0].toggled = previousSeeking;
+            settingsPanel.notificationsCheckbox[0].toggled = notificationsEnabled;
+            settingsPanel.notifyDisposeSelect.component.select(notificationsDispose, true);
+
+            return settingsPanel.panel;
+        }
+
+        async function initSettings() {
+            const pwdChange = document.querySelector("div.settings_line#chgpass");
+    
+            insertBefore(pwdChange, await getSettingsLine());
+        }
+    
+        // =========================
+        // === SETTINGS WRAPPING ===
+        // =========================
+
+        // #region Settings Wrapping
+
+        function wrapSettings() {
+            const originalSettingsInit = Settings.init.bind(Settings);
+
+            Settings.init = function wrappedInitSettings() {
+                originalSettingsInit();
+
+                initSettings();
+            };
+        }
+
+        if (cur.module === "settings") {
+            wrapSettings();
+
+            initSettings();
+        } else {
+            // stManager loads all the resources and we can wrap its function
+            const origStAdd = stManager.add.bind(stManager);
+
+            stManager.add = function wrappedStManagerAdd(...args) {
+                try {
+                    if (args[0].includes("settings.js")) {
+                        const origCb = args[1];
+
+                        args[1] = function wrappedCallback() {
+                            if (origCb) origCb();
+
+                            wrapSettings();
+
+                            console.log("[VKAINTEGRA] Wrapped settings initialization");
+
+                            stManager.add = origStAdd;
+                        }
+                    }
+                } catch (err) {
+                    console.error("[VKAINTEGRA] FAILED wrapped settings.js", err);
+                }
+
+                origStAdd(...args);
+            }
+        }
+
+        // #endregion
+    }
+
     // =====================
     // === NOTIFICATIONS ===
     // =====================
 
+    if (notificationsEnabled && Notification.permission !== "granted") {
+        const SETTINGS_LINK = `<a href=\"/settings\" onclick=\"nav.go(this, event, {noback: !0}))\">${isUsingRuLocale() ? "на странице настроек" : "on settings page"}</a>`
+
+        showDoneBox(
+            isUsingRuLocale()
+                ? `С момента прошлой активации уведомлений от VK Audio Integration разрешения на отправку этих самых уведомлений больше нет. Включить их обратно можно ${SETTINGS_LINK}.`
+                : `Since last activation of notifications from VK Audio Integration, there is no more permission to send those notifications. You can re-enable them ${SETTINGS_LINK}.`
+        );
+
+        notificationsEnabled = false;
+
+        saveSettings();
+    }
+
     const UNKNOWN_AUDIO_ICON = "https://i.imgur.com/tTGovqM.png";
 
-    let notificationsAllowed = false;
+    let currentNotificationTimer = undefined;
 
-    let currentNotification = undefined;
+    const DISPOSE_OPTIONS = {
+        "3s": 3000,
+        "5s": 5000
+    };
 
     function showNotification(trackMetadata, actualityCallback) {
-        console.log("[VKAINTEGRA] Sending notification for", trackMetadata);
-
-        if (!notificationsAllowed) return;
+        if (!notificationsEnabled) return;
 
         let icon = trackMetadata.artwork[0].src;
 
         if (!icon) icon = UNKNOWN_AUDIO_ICON;
-
-        if (currentNotification) currentNotification.close();
 
         const notification = new Notification(trackMetadata.title, {
             body: `${trackMetadata.artist}\n${trackMetadata.album} · VK`,
@@ -105,99 +557,19 @@
 
         if (!actualityCallback()) {
             notification.close();
-        } else {
-            currentNotification = notification;
+        } else if (notificationsDispose !== "auto") {
+            if (currentNotificationTimer) clearTimeout(currentNotificationTimer);
 
-            setTimeout(notification.close.bind(notification), 3000);
+            setTimeout(() => {
+                notification.close();
+                currentNotificationTimer = null;
+            }, DISPOSE_OPTIONS[notificationsDispose]);
         }
     }
 
-    // BUG-5: GM can be different and we must be catchy
-    const setValue = (() => {
-        try {
-            return GM && GM.setValue;
-        } catch {
-            return GM_setValue;
-        }
-    })();
-
-    unsafeWindow.vkaDeny = function disableNotifications() {
-        const BALLOON_TEXT = isUsingRuLocale()
-            ? "Что ж, как пожелаете!"
-            : "Well, as you wish!";
-
-        setValue("notifyActivated", false);
-        setValue("notifyDlgDone", true);
-
-        showDoneBox(BALLOON_TEXT);
-    };
-
-    function activateNotifications() {
-        notificationsAllowed = true;
-
-        setValue("notifyDlgDone", true);
-        setValue("notifyActivated", true);
-
-        return showDoneBox(
-            isUsingRuLocale()
-                ? "Уведомления включены!"
-                : "Notifications are enabled!"
-        );
-    }
-
-    unsafeWindow.vkaNotifs = function enableNotifications() {
-        if (Notification.permission === "granted") return activateNotifications();
-
-        Notification.requestPermission().then((status) => {
-            if (status === "granted") return activateNotifications();
-
-            showDoneBox(
-                isUsingRuLocale()
-                    ? "Кажется, вы отклонили запрос, либо отключили их в браузере.\n<a href=\"#\" onclick=\"vkaNotifs(); return false;\">Попробовать ещё раз?</a>"
-                    : "It seems you have denied request, or disabled it in browser.\n<a href=\"#\" onclick=\"vkaNotifs(); return false;\">Try again?</a>"
-            );
-        })
-    }
-
-    {
-        const getValue = (() => {
-            try {
-                return GM && GM.getValue;
-            } catch {
-                return GM_getValue;
-            }
-        })();
-
-
-        // BUG-6: getValue may be async and not, glad await ignores that
-        (async () => {
-            // Notification.permission === "granted"
-            if (await getValue("notifyActivated", true)) {
-                if (Notification.permission === "granted") {
-                    notificationsAllowed = true;
-                    return;
-                }
-
-                setValue("notifyActivated", false);
-
-                showDoneBox(
-                    isUsingRuLocale()
-                        ? "С момента прошлой активации уведомлений от VK Audio Integration разрешения на отправку этих самых уведомлений больше нет. Уведомления отключены. <a href=\"#\" onclick=\"vkaNotifs(); return false;\">Включить обратно?</a>"
-                        : "Since last activation of notifications from VK Audio Integration, there is no more permission to send those notifications, therefore notifications disabled. <a href=\"#\" onclick=\"vkaNotifs(); return false;\">Turn them back on!</a>"
-                );
-            }
-
-            if (await getValue("notifyDlgDone", false)) return;
-
-            showDoneBox(
-                isUsingRuLocale()
-                    ? "VK Audio Integration может также отправлять уведомления о текущем проигрываемом треке, но их нужно включить.\n<a href=\"#\" onclick=\"vkaNotifs(); return false;\">Давайте!</a>"
-                    : "VK Audio Integration can also send you notifications about currently playing track, but you should enable them.\n<a href=\"#\" onclick=\"vkaNotifs(); return false;\">Let's do it!</a>"
-            );
-
-            setValue("notifyDlgDone", true);
-        })();
-    }
+    // =====================
+    // === PLAYER EVENTS ===
+    // =====================
 
     const setPositionState = navigator.mediaSession.setPositionState
         ? navigator.mediaSession.setPositionState
@@ -206,10 +578,6 @@
             
             return () => {};
         })();
-
-    // =====================
-    // === PLAYER EVENTS ===
-    // =====================
 
     let isStarted = false;
 
@@ -221,7 +589,7 @@
 
     function previousTrack(player) {
         // FEAT-1: Rewind to start instead of playing previous
-        if (player.stats.currentPosition > 2) {
+        if (previousSeeking && player.stats.currentPosition > 2) {
             player.seekToTime(0);
         } else {
             player.playPrev();
