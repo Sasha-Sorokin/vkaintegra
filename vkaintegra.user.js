@@ -268,6 +268,9 @@
     onPlayerEvent("curr", function onTrackChange(track) {
         // Prepare metadata
 
+        // BUG-7: Sometimes VK tells us it has no current track
+        if (!track) return onStop();
+
         const trackMetadata = extractVKMetadata(track);
 
         const player = getAudioPlayer();
@@ -322,7 +325,7 @@
         navigator.mediaSession.playbackState = "paused";
     });
 
-    onPlayerEvent("stop", function onStop() {
+    function onStop() {
         console.log("[VKAINTEGRA] Stopped player, reset state and unbind handlers");
 
         navigator.mediaSession.playbackState = "none";
@@ -332,7 +335,9 @@
         resetHandlers(GENERAL_HANDLERS);
 
         isStarted = false;
-    });
+    }
+
+    onPlayerEvent("stop", onStop);
 
     // ===================
     // === POST EVENTS ===
