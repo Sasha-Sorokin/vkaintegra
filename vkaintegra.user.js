@@ -49,10 +49,16 @@
     function extractVKMetadata(audio) {
         // 3 title
         // 4 artist
+        // 16 remix
+
+        let title = htmlDecode(audio[3]);
+
+        const remixType = audio[16];
+        if (remixType !== "") title += `- ${htmlDecode(remixType)}`;
 
         return {
             artist: htmlDecode(audio[4]),
-            title: htmlDecode(audio[3]),
+            title,
             artwork: extractArtworks(audio)
         };
     }
