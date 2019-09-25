@@ -308,7 +308,7 @@
         async function saveSettingsInteractive() {
             saveSettings();
 
-            window.uiPageBlock && uiPageBlock.showSaved("vkaintegra");
+            unsafeWindow.uiPageBlock && uiPageBlock.showSaved("vkaintegra");
         }
 
         function previousSeekingChanged(e) {
