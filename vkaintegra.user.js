@@ -588,15 +588,17 @@
         "5s": 5000
     };
 
-    function showNotification(trackMetadata, actualityCallback) {
+    function showNotification(trackMetadata, actualityCallback, unknownAlbum) {
         if (!notificationsEnabled) return;
 
         let icon = trackMetadata.artwork[0].src;
 
-        if (!icon) icon = UNKNOWN_AUDIO_ICON;
+        const albumLine = unknownAlbum
+            ? "VK"
+            : `${trackMetadata.album} · VK`;
 
         const notification = new Notification(trackMetadata.title, {
-            body: `${trackMetadata.artist}\n${trackMetadata.album} · VK`,
+            body: `${trackMetadata.artist}\n${albumLine}`,
             silent: true,
             icon,
             tag: "vk-nowplaying"
@@ -713,10 +715,14 @@
         // BUG-9: playlist titles can be empty for some reason
         const playlistTitle = htmlDecode(playlist._title);
 
+        let unknownPlaylist = false;
+
         if (playlistTitle === "") {
             playlistTitle = isUsingRuLocale()
                 ? "(неизвестно)"
                 : "(unknown)";
+
+            unknownPlaylist = true;
         }
 
         trackMetadata.album = playlistTitle;
@@ -733,9 +739,13 @@
 
         updateControls(player, playlist, track);
 
-        if (isStarted && notification) showNotification(trackMetadata, () => {
-            return player._currentAudio[0] === track[0];
-        });
+        if (isStarted && notification) {
+            showNotification(
+                trackMetadata,
+                () => player._currentAudio[0] === track[0],
+                unknownPlaylist
+            );
+        }
     }
 
     onPlayerEvent("curr", onTrackChange);
