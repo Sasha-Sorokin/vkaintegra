@@ -431,7 +431,7 @@
 
                 const tooltipText = ruLocale
                     ? "Если настройка включена, то, при нажатии кнопки или клавиши «Прошлый трек», вместо перехода будет осуществляться перемотка к началу трека.<br><br>Переход всегда будет осуществляться, если трек играет менее 2 секунд."
-                    : "With this setting on, clicking button or pressing “Previous track” will seek to beginning of the current track instead of switching.<br><br>Switching will always happend if track is playing for less than 2 seconds.";
+                    : "With this setting on, clicking button or pressing “Previous track” will seek to beginning of the current track instead of switching.<br><br>Switching will always happen if track is playing for less than 2 seconds.";
 
                 bindTooltip(label, tooltipText);
             }
