@@ -710,7 +710,16 @@
             }
         }
 
-        trackMetadata.album = htmlDecode(playlist._title);
+        // BUG-9: playlist titles can be empty for some reason
+        const playlistTitle = htmlDecode(playlist._title);
+
+        if (playlistTitle === "") {
+            playlistTitle = isUsingRuLocale()
+                ? "(неизвестно)"
+                : "(unknown)";
+        }
+
+        trackMetadata.album = playlistTitle;
 
         // Prepare the media session
 
