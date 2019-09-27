@@ -117,17 +117,24 @@
      */
     let previousSeeking;
 
+    /**
+     * Should be "next track" button be actived on latest track in playlist?
+     */
+    let lastNext;
+
     // Load all the settings
     await (async () => {
         notificationsEnabled = await settings.getValue("notificationsEnabled", false);
         notificationsDispose = await settings.getValue("notificationsDispose", "3s");
         previousSeeking = await settings.getValue("previousSeeking", false);
+        lastNext = await settings.getValue("lastNext", true);
     })();
 
     function saveSettings() {
         settings.setValue("notificationsEnabled", notificationsEnabled);
         settings.setValue("notificationsDispose", notificationsDispose);
         settings.setValue("previousSeeking", previousSeeking);
+        settings.setValue("lastNext", lastNext);
     }
 
     // =========================
@@ -140,110 +147,104 @@
         function appendTo(elem, children) {
             for (let i = 0, l = children.length; i < l; i++) {
                 const child = children[i];
-    
+
                 if (typeof child === "function") child(elem);
                 else elem.appendChild(child);
             }
         }
-    
+
         function inlineMenuValueText(values, value) {
             for (let i = 0, l = values.length; i < l; i++) {
                 const item = values[i];
                 if (item[0] === value) return item[1];
             }
         }
-    
+
         function createInlineMenu(id, currentValue, values, onSelect) {
-            /* <div class="settings_vkaintegra_delay" id="settings_vkaintegra_delay">
-                <div class="idd_selected_value" tabindex="0" role="link">{{currentValueText}}</div>
-                
-                <input type="hidden" id="settings_vkaintegra_delay_input" name="settings_vkaintegra_delay" value="{{currentValueId}}">
-            </div> */
-    
             const div = document.createElement("div");
-    
+
             div.id = id;
             div.classList.add(id);
-    
+
             const selectedValue = document.createElement("div");
-    
+
             selectedValue.classList.add("idd_selected_value");
             selectedValue.setAttribute("tabIndex", 0);
             selectedValue.setAttribute("role", "link");
             selectedValue.innerText = inlineMenuValueText(values, currentValue);
-    
+
             div.appendChild(selectedValue);
-    
+
             const input = document.createElement("input");
-    
+
             input.id = `${id}_input`;
             input.setAttribute("type", "hidden");
             input.setAttribute("name", id);
             input.value = currentValue;
-    
+
             div.appendChild(input);
-    
+
             return function mount(parent) {
                 parent.appendChild(div);
-    
+
                 const dropdown = new InlineDropdown(div, {
                     items: values,
                     selected: currentValue,
                     onSelect
                 });
-    
+
                 mount.component = dropdown;
             }
         }
-    
+
         function createCheckbox(id, text, isChecked, onChange) {
             const checkbox = document.createElement("input");
-    
+
             checkbox.classList.add("blind_label");
             checkbox.setAttribute("type", "checkbox");
             checkbox.checked = isChecked;
             checkbox.id = id;
             checkbox.addEventListener("change", onChange);
-    
+
             const label = document.createElement("label");
-    
+
             label.setAttribute("for", id);
             label.innerText = text;
-    
+
             return [checkbox, label];
         }
-    
+
         function createSettingsNarrowRow(children) {
             const div = document.createElement("div");
-    
+
             div.classList.add("settings_narrow_row");
-    
+
             appendTo(div, children);
-    
+
             return div;
         }
-    
+
         function createSettingsLine(labelText, id, children) {
             const div = document.createElement("div");
 
             div.id = id;
             div.classList.add("settings_line");
-    
+
             const label = document.createElement("div");
-    
+
             label.classList.add("settings_label");
             label.innerText = labelText;
-    
+
             div.appendChild(label);
-    
+
             const inner = document.createElement("div");
-    
+
             inner.classList.add("settings_labeled_text");
-            
+
             appendTo(inner, children);
-    
+
             div.appendChild(inner);
-    
+
             return div;
         }
 
@@ -268,7 +269,7 @@
         function cid(id) {
             return `vkaintegra_${id}`;
         }
-    
+
         const initNotifyValues = [
             // [value, [russian, english]]
             ["auto", ["автоматически", "automatically"]],
@@ -279,13 +280,13 @@
         function getNotifyDisposeValues() {
             const values = [];
             const isRuLocale = isUsingRuLocale();
-    
+
             for (let i = 0, l = initNotifyValues.length; i < l; i++) {
                 const item = initNotifyValues[i];
-    
+
                 values.push([item[0], item[1][isRuLocale ? 0 : 1]]);
             }
-    
+
             return values;
         }
 
@@ -297,6 +298,19 @@
         function enableElement(element) {
             element.style.opacity = "";
             element.style["pointer-events"] = "";
+        }
+
+        function bindTooltip(elem, text) {
+            elem.addEventListener("mouseover", function showLabelTooltip() {
+                showTooltip(this, {
+                    shift: [-20, 8, 8],
+                    dir: "auto",
+                    text: text,
+                    slide: 15,
+                    className: 'settings_tt',
+                    hasover: 1
+                });
+            });
         }
 
         // #endregion
@@ -313,6 +327,30 @@
 
         function previousSeekingChanged(e) {
             previousSeeking = e.target.checked;
+
+            saveSettingsInteractive();
+        }
+
+        function lastNextChanged(e) {
+            lastNext = e.target.value;
+
+            try {
+                // We may need to refresh the controls to apply changes
+                const player = getAudioPlayer();
+
+                const { _currentAudio: audio } = player;
+
+                if (audio != null) {
+                    console.log("[VKAINTEGRA] Refreshing controls due to lastNext change");
+
+                    onStop();
+                    onStart();
+                    onTrackChange(player._currentAudio, false);
+                    if (!player._isPlaying) onPause();
+                }
+            } catch (err) {
+                console.error("[VKAINTEGRA] Failed to refresh controls", err);
+            }
 
             saveSettingsInteractive();
         }
@@ -375,12 +413,12 @@
         // =============================
 
         let settingsPanel = Object.create(null);
-    
+
         async function getSettingsLine() {
             // #region Panel initialization
 
             const ruLocale = isUsingRuLocale();
-    
+
             if (!settingsPanel.previousSeekingCheckbox) {
                 const [,label] = settingsPanel.previousSeekingCheckbox = createCheckbox(
                     cid("previous_seeking"),
@@ -395,18 +433,26 @@
                     ? "Если настройка включена, то, при нажатии кнопки или клавиши «Прошлый трек», вместо перехода будет осуществляться перемотка к началу трека.<br><br>Переход всегда будет осуществляться, если трек играет менее 2 секунд."
                     : "With this setting on, clicking button or pressing “Previous track” will seek to beginning of the current track instead of switching.<br><br>Switching will always happend if track is playing for less than 2 seconds.";
 
-                label.addEventListener("mouseover", function showLabelTooltip() {
-                    showTooltip(this, {
-                        shift: [-20, 8, 8],
-                        dir: "auto",
-                        text: tooltipText,
-                        slide: 15,
-                        className: 'settings_tt',
-                        hasover: 1
-                    });
-                });
+                bindTooltip(label, tooltipText);
             }
-    
+
+            if (!settingsPanel.lastNextCheckbox) {
+                const [,label] = settingsPanel.lastNextCheckbox = createCheckbox(
+                    cid("last_next"),
+                    ruLocale
+                        ? "Не отключать «Следующий трек» в конце плейлиста"
+                        : "Do not disable “Next track” at last song in playlist",
+                    lastNext,
+                    lastNextChanged
+                );
+
+                const tooltipText = ruLocale
+                    ? "Включение этой настройки убирает отключение кнопки «Следующий трек» при проигрывании последнего трека в плейлисте. Нажатие этой кнопки остановит воспроизведение и переключится на первый трек в плейлисте."
+                    : "Enabling this option avoids disabling of “Next track” button when playing last track in playlist. Pressing this button stops playing and switches to first track in playlist."
+
+                bindTooltip(label, tooltipText);
+            }
+
             if (!settingsPanel.notificationsCheckbox) {
                 settingsPanel.notificationsCheckbox = createCheckbox(
                     cid("notifications"),
@@ -415,7 +461,7 @@
                     notificationsChanged
                 );
             }
-    
+
             if (!settingsPanel.notifyDisposeSelect) {
                 settingsPanel.notifyDisposeSelect = createInlineMenu(
                     cid("notifications_dispose"),
@@ -424,7 +470,7 @@
                     notifyDisposeSelected
                 );
             }
-    
+
             if (!settingsPanel.panel) {
                 const CLOSE_NOTIFS_TEXT = document.createTextNode(
                     ruLocale
@@ -440,6 +486,7 @@
 
                 settingsPanel.panel = createSettingsLine("VK Audio Integration", "vkaintegra", [
                     createSettingsNarrowRow(settingsPanel.previousSeekingCheckbox),
+                    createSettingsNarrowRow(settingsPanel.lastNextCheckbox),
                     createSettingsNarrowRow(settingsPanel.notificationsCheckbox),
                     createSettingsNarrowRow([CLOSE_NOTIFS_TEXT, settingsPanel.notifyDisposeSelect, DISPOSE_HINT])
                 ]);
@@ -460,10 +507,10 @@
 
         async function initSettings() {
             const pwdChange = document.querySelector("div.settings_line#chgpass");
-    
+
             insertBefore(pwdChange, await getSettingsLine());
         }
-    
+
         // =========================
         // === SETTINGS WRAPPING ===
         // =========================
@@ -575,17 +622,19 @@
         ? navigator.mediaSession.setPositionState
         : (() => {
             console.log("[VKAINTEGRA] setPositionState is not implemeted!");
-            
+
             return () => {};
         })();
 
     let isStarted = false;
 
-    onPlayerEvent("start", () => {
+    function onStart() {
         isStarted = true;
 
         bindGeneralHandlers()
-    });
+    }
+
+    onPlayerEvent("start", onStart);
 
     function previousTrack(player) {
         // FEAT-1: Rewind to start instead of playing previous
@@ -596,16 +645,21 @@
         }
     }
 
+    let isLatestTrack = false;
+
     function updateControls(player, playlist, track) {
         const audioPosition = playlist.indexOfAudio(track);
 
         const playlistLength = playlist.getAudiosCount() - 1;
 
-        const noNext = audioPosition === playlistLength;
         const noPrevious = audioPosition === 0;
 
-        if (noNext) resetHandlers("nexttrack");
-        else bindHandler("nexttrack", () => player.playNext());
+        isLatestTrack = audioPosition === playlistLength;
+
+        if (!lastNext) {
+            if (isLatestTrack) resetHandlers("nexttrack");
+            else bindHandler("nexttrack", () => player.playNext());
+        }
 
         if (noPrevious) resetHandlers("previoustrack");
         else bindHandler("previoustrack", () => previousTrack(player));
@@ -633,9 +687,7 @@
 
     onPlayerEvent("plchange", onPlaylistChange);
 
-    onPlayerEvent("curr", function onTrackChange(track) {
-        // Prepare metadata
-
+    function onTrackChange(track, notification = true) {
         // BUG-7: Sometimes VK tells us it has no current track
         if (!track) return onStop();
 
@@ -672,10 +724,12 @@
 
         updateControls(player, playlist, track);
 
-        if (isStarted) showNotification(trackMetadata, () => {
+        if (isStarted && notification) showNotification(trackMetadata, () => {
             return player._currentAudio[0] === track[0];
         });
-    });
+    }
+
+    onPlayerEvent("curr", onTrackChange);
 
     onPlayerEvent("progress", function onProgress(_progress, duration, position) {
         setPositionState({ duration, playbackRate: 1, position });
@@ -689,12 +743,14 @@
         });
     });
 
-    onPlayerEvent("pause", function onPause() {
+    function onPause() {
         navigator.mediaSession.playbackState = "paused";
-    });
+    }
+
+    onPlayerEvent("pause", onPause);
 
     function onStop() {
-        console.log("[VKAINTEGRA] Stopped player, reset state and unbind handlers");
+        console.log("[VKAINTEGRA] Player stopped. Reset state and unbind handlers");
 
         navigator.mediaSession.playbackState = "none";
 
@@ -766,6 +822,18 @@
         bindHandler("pause", () => player.pause());
 
         bindHandler("seek", ({ seekTime }) => player.seekToTime(seekTime));
+
+        if (lastNext) {
+            bindHandler("nexttrack", () => {
+                // BUG-8: playNext() after latest track not firing stop or pause
+                let stopAfter = false;
+                if (isLatestTrack && !ap.isRepeatAll()) stopAfter = true;
+
+                player.playNext();
+
+                if (stopAfter) player.stop();
+            });
+        }
 
         generalHandlersBound = true;
     }
