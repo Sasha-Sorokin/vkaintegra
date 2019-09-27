@@ -4,7 +4,7 @@
 // @author Sasha Sorokin
 // @homepage https://github.com/Sasha-Sorokin/vkaintegra
 // @supportURL https://github.com/Sasha-Sorokin/vkaintegra/issues
-// @version  1.5.3
+// @version  1.5.4
 // @updateURL https://raw.githubusercontent.com/Sasha-Sorokin/vkaintegra/master/vkaintegra.user.js
 // @grant GM.notification
 // @grant GM_notification
