@@ -710,7 +710,7 @@
             }
         }
 
-        trackMetadata.album = playlist._title;
+        trackMetadata.album = htmlDecode(playlist._title);
 
         // Prepare the media session
 
