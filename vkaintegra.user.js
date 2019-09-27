@@ -83,6 +83,22 @@
         referenceNode.parentNode.insertBefore(newNode, referenceNode);
     }
 
+    // from underscore.js
+    function debounce(func, wait, immediate) {
+        let timeout;
+        return function() {
+            const context = this, args = arguments;
+            const later = function() {
+                timeout = null;
+                if (!immediate) func.apply(context, args);
+            };
+            const callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) func.apply(context, args);
+        };
+    };
+
     // ====================
     // ===   SETTINGS   ===
     // ====================
@@ -627,6 +643,8 @@
         }
     }
 
+    const notificationDebounce = debounce(showNotification, 1000);
+
     // =====================
     // === PLAYER EVENTS ===
     // =====================
@@ -766,7 +784,7 @@
         updateControls(player, playlist, track);
 
         if (isStarted && notification) {
-            showNotification(
+            notificationDebounce(
                 trackMetadata,
                 () => player._currentAudio[0] === track[0],
                 unknownPlaylist
