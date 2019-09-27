@@ -583,7 +583,10 @@
         saveSettings();
     }
 
-    const UNKNOWN_AUDIO_ICON = "https://i.imgur.com/tTGovqM.png";
+    const UNKNOWN_AUDIO_ICON = {
+        SMALL: "https://i.imgur.com/tTGovqM.png",
+        LARGE: "https://i.imgur.com/EbP2xGC.png"
+    };
 
     let currentNotificationTimer = undefined;
 
@@ -596,6 +599,10 @@
         if (!notificationsEnabled) return;
 
         let icon = trackMetadata.artwork[0].src;
+
+        if (icon === UNKNOWN_AUDIO_ICON.LARGE) {
+            icon = UNKNOWN_AUDIO_ICON.SMALL;
+        }
 
         const albumLine = unknownAlbum
             ? "VK"
@@ -730,6 +737,21 @@
         }
 
         trackMetadata.album = playlistTitle;
+
+        // BUG-10: chrome sets url of the current page if artwork == "",
+        // so let's use unknown icon as we did with notifications for
+        // every empty artwork in the array
+        {
+            const artworks = trackMetadata.artwork;
+
+            for (let i = 0, l = artworks.length; i < l; i++) {
+                const artwork = artworks[i];
+
+                if (artwork.src === "") {
+                    artwork.src = UNKNOWN_AUDIO_ICON.LARGE;
+                };
+            }
+        }
 
         // Prepare the media session
 
