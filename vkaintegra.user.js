@@ -40,17 +40,21 @@
         return doc.documentElement.textContent;
     }
 
-    function extractArtworks(audio) {
         // 14 artworks
+    function extractArtworks(audio) {
+        const artworks = [...new Set(audio[14].split(","))];
 
-        return audio[14].split(",").map(_ => ({ src: _ }));
+        for (let i = 0, l = artworks.length; i < l; i++) {
+            artworks[i] = { src: artworks[i] };
     }
 
-    function extractVKMetadata(audio) {
+        return artworks;
+    }
+
         // 3 title
         // 4 artist
         // 16 remix
-
+    function extractVKMetadata(audio) {
         let title = htmlDecode(audio[3]);
 
         const remixType = audio[16];
