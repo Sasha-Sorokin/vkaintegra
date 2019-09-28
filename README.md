@@ -13,7 +13,7 @@
 
 <sup>2</sup> *Notifications are only sent if you enabled them in [settings][vk_settings] and granted permission to vk.com to send them.*
 
-<sup>3<sup> *If player is playing song for more than 2 seconds, pressing “previous track” button will just seek to beginning of the current track instead of actually switching to previous track. This is also can be configured in [settings][vk_settings].*
+<sup>3</sup> *If player is playing song for more than 2 seconds, pressing “previous track” button will just seek to beginning of the current track instead of actually switching to previous track. This is also can be configured in [settings][vk_settings].*
 
 ## How do I use it?
 
