@@ -643,7 +643,7 @@
         }
     }
 
-    const notificationDebounce = debounce(showNotification, 1000);
+    const notificationDebounce = debounce(showNotification, 500);
 
     // =====================
     // === PLAYER EVENTS ===
