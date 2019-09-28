@@ -662,7 +662,9 @@
     function onStart() {
         isStarted = true;
 
-        bindGeneralHandlers()
+        bindGeneralHandlers();
+
+        navigator.mediaSession.playbackState = "playing";
     }
 
     onPlayerEvent("start", onStart);
