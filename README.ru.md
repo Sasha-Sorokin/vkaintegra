@@ -19,7 +19,13 @@
 
 [![Кнопка установки](https://img.shields.io/badge/VK%20Audio%20Integration-%D0%A3%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%B8%D1%82%D1%8C-brightgreen)](https://github.com/Sasha-Sorokin/vkaintegra/raw/master/vkaintegra.user.js)
 
-**По-прежнему необходима системная интеграция, которая будет использовать эти данные**. KDE предоставляет расширение Plasma Browser Integration для Firefox и Chrome, которое использует MediaSession и мониторинг аудио и видео элементов на странице, чтобы предоставить вам элементы управления и отображать информацию о медиа. [Подробнее →](https://vk.com/@kde_ru-plasma-browser-integration-15)
+**Вам по-прежнему необходима системная интеграция, которая будет использовать эти данные**:
+
+- На Windows, Chromium может показывать [элементы управления](/examples/windows_controls.jpg) и перехватывать нажатия мультимедийных клавиш, если вы включите флаг «Media Session Service» (`chrome://flags/#enable-media-session-service`)
+- На Linux, KDE предоставляет расширение Plasma Browser Integration для Firefox и Chromium, которое использует MediaSession и мониторинг аудио и видео элементов на странице, чтобы предоставить вам элементы управления и отображать информацию о медиа. [Подробнее →](https://vk.com/@kde_ru-plasma-browser-integration-15)
+- Chromium также имеет [глобальные элементы управления](/examples/chromium_controls.jpg). Они могут быть включены флагом «Global Media Controls» (`chrome://flags/#global-media-controls`). [Узнать больше →](https://www.iguides.ru/main/other/v_chrome_poyavitsya_novaya_funktsiya_upravleniya_vosproizvedeniem/)
+
+*Под «Chromium» следует понимать любые браузеры, базирующиеся на нём, включая: Google Chrome, Opera, Яндекс.Браузер, новый Edge, Vivaldi, Brave. Однако, они могут не поддерживать некоторые флаги требуемые выше.*
 
 ## Сообщения об ошибках
 

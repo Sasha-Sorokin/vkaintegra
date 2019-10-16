@@ -21,7 +21,13 @@ You have to install userscript with the preferred extension ([Tampermonkey](http
 
 [![Installation button](https://img.shields.io/badge/VK%20Audio%20Integration-Install-brightgreen)](https://github.com/Sasha-Sorokin/vkaintegra/raw/master/vkaintegra.user.js)
 
-**You still need system-wide integration which will use provided data.** KDE provides Plasma Browser Integration extension for Firefox and Chrome, which uses data from MediaSession along with monitoring web page audio and video elements to provide you controls and display media info. [Read more →](https://mastodon.technology/@kde/101985925180129532)
+**You still need system-wide integration which will use provided data**:
+
+- On Windows, Chromium can initialize [on-screen media controls](/examples/windows_controls.jpg) and bind media keyboard keys, if you have enabled “Media Session Service” flag (`chrome://flags/#enable-media-session-service`)
+- On Linux, KDE provides Plasma Browser Integration extension for Firefox and Chromium, which uses data from MediaSession along with monitoring web page audio and video elements to provide you controls and display media info. [Read more →](https://mastodon.technology/@kde/101985925180129532)
+- Chromium also has [global UI controls](/examples/chromium_controls.jpg). They can be enabled using flag “Global Media Controls” (`chrome://flags/#global-media-controls`). [Learn more →](https://www.theverge.com/2019/7/6/20684353/)
+
+*“Chromium” means all browsers based on it, including: Google Chrome, Opera, new Edge, Vivaldi, Brave. Although, they can not support some of the flags required above.*
 
 ## Reporting issues
 
