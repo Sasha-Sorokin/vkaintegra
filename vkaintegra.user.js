@@ -2,9 +2,10 @@
 // @name     VK Audio Integration
 // @description Integrates VK.com audio player with MediaSession API
 // @author Sasha Sorokin
+// @version  1.5.10
+// @namespace https://github.com/Sasha-Sorokin/vkaintegra
 // @homepage https://github.com/Sasha-Sorokin/vkaintegra
 // @supportURL https://github.com/Sasha-Sorokin/vkaintegra/issues
-// @version  1.5.10
 // @updateURL https://raw.githubusercontent.com/Sasha-Sorokin/vkaintegra/master/vkaintegra.user.js
 // @grant GM.notification
 // @grant GM_notification
