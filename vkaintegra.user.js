@@ -1,8 +1,10 @@
 // ==UserScript==
-// @name     VK Audio Integration
+// @name VK Audio Integration
+// @name:ru Аудио интеграция VK
 // @description Integrates VK.com audio player with MediaSession API
+// @description:ru Интегрирует аудиоплеер ВКонтакте с API MediaSession
 // @author Sasha Sorokin
-// @version  1.5.10
+// @version 1.5.10
 // @namespace https://github.com/Sasha-Sorokin/vkaintegra
 // @homepage https://github.com/Sasha-Sorokin/vkaintegra
 // @supportURL https://github.com/Sasha-Sorokin/vkaintegra/issues
