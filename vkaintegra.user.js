@@ -76,11 +76,9 @@
         return audio[15];
     }
 
-    const RU_LANG_IDS = [0, 1, 100, 114, 777];
-
-    function isUsingRuLocale() {
-        return RU_LANG_IDS.includes(langConfig.id);
-    }
+    const USING_RU_LOCALE = (function isUsingRuLocale() {
+        return [0, 1, 100, 114, 777].includes(langConfig.id);
+    })();
 
     function insertBefore(referenceNode, newNode) {
         referenceNode.parentNode.insertBefore(newNode, referenceNode);
@@ -302,12 +300,11 @@
 
         function getNotifyDisposeValues() {
             const values = [];
-            const isRuLocale = isUsingRuLocale();
 
             for (let i = 0, l = initNotifyValues.length; i < l; i++) {
                 const item = initNotifyValues[i];
 
-                values.push([item[0], item[1][isRuLocale ? 0 : 1]]);
+                values.push([item[0], item[1][USING_RU_LOCALE ? 0 : 1]]);
             }
 
             return values;
@@ -396,7 +393,7 @@
 
                     if (status !== "granted") {
                         showDoneBox(
-                            isUsingRuLocale()
+                            USING_RU_LOCALE
                                 ? "Кажется вы отклонили запрос, либо они блокируются браузером."
                                 : "It seems you have denied request, or they're disabled in the browser."
                         );
@@ -440,19 +437,17 @@
         async function getSettingsLine() {
             // #region Panel initialization
 
-            const ruLocale = isUsingRuLocale();
-
             if (!settingsPanel.previousSeekingCheckbox) {
                 const [,label] = settingsPanel.previousSeekingCheckbox = createCheckbox(
                     cid("previous_seeking"),
-                    ruLocale
+                    USING_RU_LOCALE
                         ? "«Прошлый трек» перематывает в начало"
                         : "“Previous track” seeking to beginning",
                     previousSeeking,
                     previousSeekingChanged
                 );
 
-                const tooltipText = ruLocale
+                const tooltipText = USING_RU_LOCALE
                     ? "Если настройка включена, то, при нажатии кнопки или клавиши «Прошлый трек», вместо перехода будет осуществляться перемотка к началу трека.<br><br>Переход всегда будет осуществляться, если трек играет менее 2 секунд."
                     : "With this setting on, clicking button or pressing “Previous track” will seek to beginning of the current track instead of switching.<br><br>Switching will always happen if track is playing for less than 2 seconds.";
 
@@ -462,14 +457,14 @@
             if (!settingsPanel.lastNextCheckbox) {
                 const [,label] = settingsPanel.lastNextCheckbox = createCheckbox(
                     cid("last_next"),
-                    ruLocale
+                    USING_RU_LOCALE
                         ? "Не отключать «Следующий трек» в конце плейлиста"
                         : "Do not disable “Next track” at last song in playlist",
                     lastNext,
                     lastNextChanged
                 );
 
-                const tooltipText = ruLocale
+                const tooltipText = USING_RU_LOCALE
                     ? "Включение этой настройки убирает отключение кнопки «Следующий трек» при проигрывании последнего трека в плейлисте. Нажатие этой кнопки остановит воспроизведение и переключится на первый трек в плейлисте."
                     : "Enabling this option avoids disabling of “Next track” button when playing last track in playlist. Pressing this button stops playing and switches to first track in playlist."
 
@@ -479,7 +474,7 @@
             if (!settingsPanel.notificationsCheckbox) {
                 settingsPanel.notificationsCheckbox = createCheckbox(
                     cid("notifications"),
-                    ruLocale ? "Включить уведомления" : "Enable notifications",
+                    USING_RU_LOCALE ? "Включить уведомления" : "Enable notifications",
                     notificationsEnabled,
                     notificationsChanged
                 );
@@ -496,13 +491,13 @@
 
             if (!settingsPanel.panel) {
                 const CLOSE_NOTIFS_TEXT = document.createTextNode(
-                    ruLocale
+                    USING_RU_LOCALE
                         ? "Убирать уведомления "
                         : "Close notifications "
                 );
 
                 const DISPOSE_HINT = createHint(
-                    ruLocale
+                    USING_RU_LOCALE
                         ? "Эта настройка позволяет установить, как быстро скрипт должен убирать уведомления.<br><br>В <b>автоматическом</b> режиме уведомления убираются браузером или системой.<br><br>В <b>других</b> режимах уведомления будут убраны спустя выбранный интервал времени."
                         : "This setting allows to set how fast script must close notifications.<br><br>In <b>automatic</b> mode notifications will be closed by browser or system.<br><br>In <b>other</b> modes notifications will be closed after selected interval."
                 );
@@ -589,10 +584,10 @@
     // =====================
 
     if (notificationsEnabled && Notification.permission !== "granted") {
-        const SETTINGS_LINK = `<a href=\"/settings\" onclick=\"nav.go(this, event, {noback: !0}))\">${isUsingRuLocale() ? "на странице настроек" : "on settings page"}</a>`
+        const SETTINGS_LINK = `<a href=\"/settings\" onclick=\"nav.go(this, event, {noback: !0}))\">${USING_RU_LOCALE ? "на странице настроек" : "on settings page"}</a>`
 
         showDoneBox(
-            isUsingRuLocale()
+            USING_RU_LOCALE
                 ? `С момента прошлой активации уведомлений от VK Audio Integration разрешения на отправку этих самых уведомлений больше нет. Включить их обратно можно ${SETTINGS_LINK}.`
                 : `Since last activation of notifications from VK Audio Integration, there is no more permission to send those notifications. You can re-enable them ${SETTINGS_LINK}.`
         );
@@ -752,7 +747,7 @@
         let unknownPlaylist = false;
 
         if (playlistTitle === "") {
-            playlistTitle = isUsingRuLocale()
+            playlistTitle = USING_RU_LOCALE
                 ? "(неизвестно)"
                 : "(unknown)";
 
