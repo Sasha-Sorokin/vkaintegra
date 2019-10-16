@@ -45,7 +45,7 @@
         const artworks = [...new Set(audio[14].split(","))];
 
         for (let i = 0, l = artworks.length; i < l; i++) {
-            artworks[i] = { src: artworks[i] };
+            artworks[i] = { src: artworks[i], sizes: "80x80" };
         }
 
         return artworks;
@@ -739,7 +739,7 @@
             // But it's good to us to take a bigger cover image
             // BUG-3: If that's an official album, of course
             if (playlist._isOfficial && playlist._coverUrl !== "") {
-                trackMetadata.artwork = [{ src: playlist._coverUrl }];
+                trackMetadata.artwork = [{ src: playlist._coverUrl, sizes: "300x300" }];
             }
         }
 
@@ -769,6 +769,7 @@
 
                 if (artwork.src === "") {
                     artwork.src = UNKNOWN_AUDIO_ICON.LARGE;
+                    artwork.sizes = "450x450";
                 };
             }
         }
