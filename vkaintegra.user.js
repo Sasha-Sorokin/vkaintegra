@@ -5,6 +5,7 @@
 // @description:ru Интегрирует аудиоплеер ВКонтакте с API MediaSession
 // @author Sasha Sorokin
 // @version 1.5.12
+// @license MIT https://raw.githubusercontent.com/Sasha-Sorokin/vkaintegra/master/LICENSE
 // @namespace https://github.com/Sasha-Sorokin/vkaintegra
 // @homepage https://github.com/Sasha-Sorokin/vkaintegra
 // @supportURL https://github.com/Sasha-Sorokin/vkaintegra/issues
