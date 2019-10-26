@@ -654,7 +654,7 @@
         : (() => {
             console.log("[VKAINTEGRA] Browser support: setPositionState is not implemeted.");
 
-            return () => {};
+            return undefined;
         })();
 
     let isStarted = false;
@@ -786,9 +786,11 @@
 
         navigator.mediaSession.metadata = new MediaMetadata(trackMetadata);
 
-        setPositionState({
-            duration: extractTimes(track).duration
-        });
+        if (setPositionState != null) {
+            setPositionState({
+                duration: extractTimes(track).duration
+            });
+        }
 
         navigator.mediaSession.playbackState = "playing";
 
@@ -805,17 +807,19 @@
 
     onPlayerEvent("curr", onTrackChange);
 
-    onPlayerEvent("progress", function onProgress(_progress, duration, position) {
-        setPositionState({ duration, playbackRate: 1, position });
-    });
-
-    onPlayerEvent("seek", function onSeek(track) {
-        setPositionState({
-            duration: extractTimes(track).duration,
-            playbackRate: 1,
-            position: getAudioPlayer()._listenedTime
+    if (setPositionState != null) {
+        onPlayerEvent("progress", function onProgress(_progress, duration, position) {
+            setPositionState({ duration, playbackRate: 1, position });
         });
-    });
+
+        onPlayerEvent("seek", function onSeek(track) {
+            setPositionState({
+                duration: extractTimes(track).duration,
+                playbackRate: 1,
+                position: getAudioPlayer()._listenedTime
+            });
+        });
+    }
 
     function onPause() {
         navigator.mediaSession.playbackState = "paused";
