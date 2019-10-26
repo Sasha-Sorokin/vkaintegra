@@ -553,8 +553,6 @@
         } else {
             let origSettings;
 
-            console.log("[VKAINTEGRA] Define Settings here");
-
             Object.defineProperty(unsafeWindow, "Settings", {
                 get() {
                     return origSettings;
