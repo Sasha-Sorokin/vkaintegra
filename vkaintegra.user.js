@@ -24,7 +24,7 @@
 (async () => {
     "use strict";
 
-    console.log("[VKAINTEGRA] Initialized...");
+    console.log("[VKAINTEGRA] Initializing...");
 
     const GENERAL_HANDLERS = ["play", "pause", "previoustrack", "nexttrack", "seek"];
 
@@ -652,7 +652,7 @@
     const setPositionState = navigator.mediaSession.setPositionState
         ? navigator.mediaSession.setPositionState
         : (() => {
-            console.log("[VKAINTEGRA] setPositionState is not implemeted!");
+            console.log("[VKAINTEGRA] Browser support: setPositionState is not implemeted.");
 
             return () => {};
         })();
