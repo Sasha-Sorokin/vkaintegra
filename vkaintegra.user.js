@@ -536,45 +536,35 @@
 
         // #region Settings Wrapping
 
-        function wrapSettings() {
-            const originalSettingsInit = Settings.init.bind(Settings);
+        function wrapSettings(settings) {
+            const origSettingsInit = settings.init.bind(Settings);
 
-            Settings.init = function wrappedInitSettings() {
-                originalSettingsInit();
+            settings.init = function wrappedInitSettings() {
+                origSettingsInit();
 
                 initSettings();
             };
         }
 
         if (cur.module === "settings") {
-            wrapSettings();
+            wrapSettings(Settings);
 
             initSettings();
         } else {
-            // stManager loads all the resources and we can wrap its function
-            const origStAdd = stManager.add.bind(stManager);
+            let origSettings;
 
-            stManager.add = function wrappedStManagerAdd(...args) {
-                try {
-                    if (args[0].includes("settings.js")) {
-                        const origCb = args[1];
+            console.log("[VKAINTEGRA] Define Settings here");
 
-                        args[1] = function wrappedCallback() {
-                            if (origCb) origCb();
+            Object.defineProperty(unsafeWindow, "Settings", {
+                get() {
+                    return origSettings;
+                },
+                set(value) {
+                    origSettings = value;
 
-                            wrapSettings();
-
-                            console.log("[VKAINTEGRA] Wrapped settings initialization");
-
-                            stManager.add = origStAdd;
-                        }
-                    }
-                } catch (err) {
-                    console.error("[VKAINTEGRA] FAILED wrapped settings.js", err);
-                }
-
-                origStAdd(...args);
-            }
+                    wrapSettings(value);
+                },
+            });
         }
 
         // #endregion
