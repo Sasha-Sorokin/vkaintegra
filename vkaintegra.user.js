@@ -32,10 +32,23 @@
     // === HELPFUL FUNCTIONS ===
     // =========================
 
-    function onPlayerEvent(e, cb) {
-        const subId = getAudioPlayer().subscribers.push({ et: e, cb });
+    function onPlayerEvent(eventName, callback) {
+        const callbackName = callback.name || "<anonymous>";
 
-        console.log(`[VKAINTEGRA] Bound ot "${e}", subscriber ID #${subId}`);
+        const subscriber = {
+            et: eventName,
+            cb: function safeCallback(...args) {
+                try {
+                    callback(...args);
+                } catch (err) {
+                    console.error(`[VKAINTEGRA] (!) Player callback ${callbackName} for event ${eventName} has failed:`, err);
+                }
+            }
+        };
+
+        const subscriberId = getAudioPlayer().subscribers.push(subscriber);
+
+        console.log(`[VKAINTEGRA] Bound callback ${callbackName} for "${eventName}", subscriber ID #${subscriberId}`);
     }
 
     function htmlDecode(input) {
