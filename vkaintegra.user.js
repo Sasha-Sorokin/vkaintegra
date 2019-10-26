@@ -670,13 +670,21 @@
     let isLatestTrack = false;
 
     function updateControls(player, playlist, track) {
-        const audioPosition = playlist.indexOfAudio(track);
+        let noPrevious;
 
-        const playlistLength = playlist.getAudiosCount() - 1;
+        if (playlist) {
+            const audioPosition = playlist.indexOfAudio(track);
 
-        const noPrevious = audioPosition === 0;
+            const playlistLength = playlist.getAudiosCount() - 1;
+    
+            noPrevious = audioPosition === 0;
+    
+            isLatestTrack = audioPosition === playlistLength;
+        } else {
+            noPrevious = true;
 
-        isLatestTrack = audioPosition === playlistLength;
+            isLatestTrack = true;
+        }
 
         if (!lastNext) {
             if (isLatestTrack) resetHandlers("nexttrack");
